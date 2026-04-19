@@ -1,0 +1,81 @@
+# OpenClaw Setup — Troubleshooting Log
+## Date: April 2026
+
+## My Setup
+- OS: Windows + WSL2 + Docker Desktop
+- GPU: AMD Radeon RX 6500M (4GB VRAM)
+- RAM: 10.7GB total
+- Models: qwen2.5:1.5b, llama3.2:3b
+
+## Problem 1 — ROCm Docker Command Doesn't Work on Windows
+The common AMD GPU Docker command fails on Windows:
+docker run -d --device /dev/kfd --device /dev/dri ollama/ollama:rocm
+WSL2 blocks /dev/kfd so AMD GPU passthrough via Docker fails.
+
+Fix: Install Ollama natively on Windows instead.
+irm https://ollama.com/install.ps1 | iex
+
+## Problem 2 — AMD GPU Not Accelerating
+ROCm doesn't work on Windows for RX 6500M.
+
+Fix: Enable Vulkan backend via environment variable:
+OLLAMA_VULKAN=1 (set as permanent system variable)
+Result: ollama ps confirmed 100% GPU ✅
+
+## Problem 3 — OpenClaw Config Corrupted
+Multiple failed attempts corrupted openclaw.json
+causing container to crash on startup.
+
+Fix: Use docker cp to copy a clean config from
+Windows into the stopped container, then start it.
+docker cp %USERPROFILE%\Desktop\openclaw.json openclaw:/home/node/.openclaw/openclaw.json
+
+## Problem 4 — Context Window Too Small
+Error: model requires more system memory (15.9 GiB)
+OpenClaw was using full 195k context window by default.
+
+Fix: Set contextTokens to 16384 in openclaw.json
+(minimum OpenClaw accepts is 16000 tokens)
+
+## Problem 5 — RAM Too Tight for llama3.2:3b
+10.7GB RAM not enough for llama3.2:3b at 16384 context
+with Docker + Windows overhead running simultaneously.
+
+Fix: Switch to smaller model qwen2.5:1.5b (986MB)
+Much more comfortable on 10GB RAM system.
+
+## Problem 6 — Amazon Bedrock Fallback
+OpenClaw kept trying amazon-bedrock before Ollama
+causing 9+ second delays before falling back.
+
+Fix: Explicitly set primary model in config:
+agents.defaults.model.primary = ollama/qwen2.5:1.5b
+
+## Problem 7 — Webchat Refresh Loop
+Dashboard kept refreshing on every message/reply.
+WebSocket instability in Chrome.
+
+Partial fix: Use localhost instead of 127.0.0.1
+Long term fix: Use WhatsApp or Telegram instead
+of webchat dashboard (more stable).
+
+## What Finally Worked
+- Ollama native on Windows with OLLAMA_VULKAN=1
+- OpenClaw in Docker connecting via host.docker.internal:11434
+- qwen2.5:1.5b with contextTokens: 16384
+- WhatsApp linked (QR scan via openclaw channels login)
+
+## Key Commands Learned
+docker ps                          — list running containers
+docker logs openclaw --tail 20     — check what's happening
+docker exec -it openclaw bash      — get inside container
+docker cp file.json openclaw:/path — copy file into container
+docker restart openclaw            — restart container
+ollama ps                          — check GPU usage
+ollama list                        — list downloaded models
+
+## Final Result
+✅ Local AI running on own hardware
+✅ AMD GPU at 100% via Vulkan
+✅ OpenClaw + Ollama + Qwen2.5 1.5B working
+✅ WhatsApp connected
