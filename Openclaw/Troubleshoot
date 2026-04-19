@@ -1,0 +1,32 @@
+# Ollama Setup — Local LLM on AMD GPU (Windows)
+
+## My Hardware
+- GPU: AMD Radeon RX 6500M (4GB VRAM)
+- OS: Windows + Docker Desktop + WSL2
+
+## What I Learned
+The ROCm Docker command that most guides show:
+docker run -d --device /dev/kfd --device /dev/dri ollama/ollama:rocm
+...does NOT work on Windows with WSL2.
+WSL2 blocks /dev/kfd, so AMD GPU passthrough via Docker fails.
+
+## The Fix — Native Install + Vulkan
+Instead of Docker, install Ollama natively on Windows:
+irm https://ollama.com/install.ps1 | iex
+
+Then enable Vulkan for AMD GPU acceleration:
+OLLAMA_VULKAN=1 (set as system environment variable)
+
+## Result
+ollama ps confirmed: 100% GPU
+AMD RX 6500M fully accelerated via Vulkan ✅
+
+## Models Tested
+- llama3.2:3b — works great, good speed on 4GB VRAM
+
+## Connecting to OpenClaw (Docker)
+OpenClaw in Docker connects to native Ollama via:
+http://host.docker.internal:11434
+
+## Date
+April 2026
