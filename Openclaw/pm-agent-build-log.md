@@ -106,7 +106,7 @@ touch file.txt
 cd Desktop
 # ERROR: Cannot find path
 ```
-**Fix:** OneDrive redirects Desktop to `C:\Users\jnura\OneDrive\Desktop`
+**Fix:** OneDrive redirects Desktop to `C:\Users\OneDrive\Desktop`
 
 ### Problem 3: Python Not on PATH
 Microsoft Store Python installs to weird location.
