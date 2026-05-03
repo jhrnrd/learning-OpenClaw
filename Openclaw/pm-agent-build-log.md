@@ -208,17 +208,6 @@ python pm_agent.py --remind        # one-shot reminder
 
 ---
 
-## What's Next
-
-- [ ] **Slack/Discord notifications** — agent pings you instead of you checking it
-- [ ] **Google Calendar API** — auto-prep for meetings
-- [ ] **Confluence API** — auto-fetch PRDs instead of manual file
-- [ ] **GitHub PR summaries** — review assistant
-- [ ] **Voice trigger** — "Hey Agent, what are my todos today?"
-- [ ] **Deploy to GitHub** — share the code, let others fork it
-
----
-
 ## The Core Insight
 
 > *"I think even using GPU that is already sufficient"*
