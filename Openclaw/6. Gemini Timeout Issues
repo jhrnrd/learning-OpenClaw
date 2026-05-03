@@ -1,0 +1,99 @@
+# Issue: Gemini API Timeout on OpenClaw (VPS)
+
+## Status
+⚠️ Unresolved — Workaround in progress
+
+## Date
+2026-05-02
+
+## Summary
+OpenClaw successfully recognizes `gemini/gemini-2.0-flash` as the agent model,
+but times out when making actual API calls to Google's OpenAI-compatible endpoint.
+
+## Symptoms
+- Logs show: `agent model: gemini/gemini-2.0-flash` ✅
+- Logs show: `fetch timeout reached; aborting operation` ❌
+- Telegram bot shows: `⚠️ Something went wrong while processing your request`
+- Free tier also hits: `All models are temporarily rate-limited`
+
+## Root Cause (Suspected)
+Google's OpenAI-compatible Gemini endpoint may have geographic restrictions
+or inconsistent routing when accessed from Tencent JKT cloud infrastructure.
+
+The endpoint in question:
+```
+https://generativelanguage.googleapis.com/v1beta/openai
+```
+
+This endpoint is not Google's native Gemini API — it's a compatibility layer
+that mimics OpenAI's API format. This layer appears to be less stable than
+the native Gemini API, especially from certain cloud regions.
+
+## What Was Tried
+
+### Attempt 1: Gemini 1.5 Flash
+```json
+"id": "gemini-1.5-flash"
+```
+**Result:** Failed — model retired in 2026, returns 404.
+
+### Attempt 2: Gemini 2.0 Flash
+```json
+"id": "gemini-2.0-flash"
+```
+**Result:** Model recognized but API calls timeout from VPS.
+
+### Attempt 3: Clearing plugin cache
+```bash
+docker exec -it --user node openclaw rm -rf /home/node/.openclaw/plugin-runtime-deps
+docker restart openclaw
+```
+**Result:** Fixed unrelated json5 package error, did not fix timeout.
+
+## Config at Time of Issue
+```json
+"models": {
+    "providers": {
+      "gemini": {
+        "apiKey": "YOUR_GEMINI_API_KEY",
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "api": "openai",
+        "models": [
+          {
+            "id": "gemini-2.0-flash",
+            "name": "Gemini 2.0 Flash",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+            "contextWindow": 1000000,
+            "maxTokens": 8192
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "gemini/gemini-2.0-flash"
+      }
+    }
+  }
+```
+
+## Next Steps
+- [ ] Enable Gemini billing to test if paid tier resolves rate limits
+- [ ] If timeout persists on paid tier → switch primary to **Kimi (Moonshot AI)**
+- [ ] Kimi API endpoint: `https://api.moonshot.cn/v1`
+- [ ] Kimi is OpenAI-compatible, same config structure
+
+## Lessons Learned
+- Free tier LLM APIs are unreliable for always-on agent use
+- OpenAI-compatible endpoints are not always stable for all providers
+- Geographic restrictions from cloud providers can affect API reachability
+- Right model for right job: Gemini Flash for tasks, Kimi for reasoning
+
+## Related Files
+- `openclaw.example.json` — config template
+- `setup.md` — full VPS setup guide
+- `.env.example` — API key placeholders
